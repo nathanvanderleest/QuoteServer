@@ -18,6 +18,7 @@ namespace WinServices
         private List<string> quotes;
         private Random random;
         private Thread listenerThread;
+        private EventLog eventLog;
 
         public QuoteServer()
             : this("quotes.txt")
@@ -52,6 +53,8 @@ namespace WinServices
         public void Start()
         {
             ReadQuotes();
+            eventLog = new EventLog("MyNewLog");
+            eventLog.Source = "QuoteServer";
             listenerThread = new Thread(ListenerThread);
             listenerThread.IsBackground = false;
             listenerThread.Name = "Listener";
@@ -66,6 +69,8 @@ namespace WinServices
                 listener.Start();
                 while (true)
                 {
+                    //eventLog.WriteEntry("In ListenerThread: running...", EventLogEntryType.Information);
+                    //Thread.Sleep(10000);
                     Socket clientSocket = listener.AcceptSocket();
                     string message = GetRandomQuoteOfTheDay();
                     UnicodeEncoding encoder = new UnicodeEncoding();
@@ -76,23 +81,48 @@ namespace WinServices
             }
             catch (SocketException ex)
             {
+                eventLog.WriteEntry(ex.Message, EventLogEntryType.Error);
                 Trace.TraceError(String.Format("QuoteServer {0}", ex.Message));
             }
         }
 
         public void Stop()
         {
-            listener.Stop();
+            try
+            {
+                eventLog.WriteEntry("Stopping QuoteServer...");
+                listener.Stop();
+            }
+            catch (Exception ex)
+            {
+                eventLog.WriteEntry(ex.Message, EventLogEntryType.Error);
+            }
         }
 
         public void Suspend()
         {
-            listener.Stop();
+            try
+            {
+                eventLog.WriteEntry("Suspending QuoteServer...");
+                listener.Stop();
+            }
+            catch (Exception ex)
+            {
+                eventLog.WriteEntry(ex.Message, EventLogEntryType.Error);
+            }
         }
 
         public void Resume()
         {
-            listener.Start();
+            try
+            {
+                eventLog.WriteEntry("Resuming QuoteServer...");
+                listener.Start();
+            }
+            catch (Exception ex)
+            {
+                eventLog.WriteEntry(ex.Message, EventLogEntryType.Error);
+            }
         }
 
         public void RefreshQuotes()
